@@ -54,7 +54,12 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> List[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        origins = []
+        for origin in self.cors_origins.split(","):
+            origin = origin.strip().rstrip("/")
+            if origin and origin not in origins:
+                origins.append(origin)
+        return origins
 
     @property
     def is_configured(self) -> bool:
