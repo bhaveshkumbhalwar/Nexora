@@ -1,53 +1,77 @@
-# Nexora
+# Nexora AI 🚀
 
-A full-stack AI chat assistant: React + Vite frontend, FastAPI backend, SQLite history, and a real LLM via an OpenAI-compatible API.
+**Nexora AI** is a modern, full-stack AI assistant designed to provide an interactive conversational experience with streaming responses and persistent chat history.
 
-## Features
-- Real LLM responses with conversation context
-- Multiple persisted conversations (SQLite)
-- Markdown + syntax-highlighted code blocks
-- Light/dark theme, responsive layout
-- Retry, copy, rename, delete conversations
-- Health check and settings modal
+🌐 **Live Demo:** [https://nexora-1-nxe6.onrender.com/](https://nexora-1-nxe6.onrender.com/)
 
-## Project structure
+📂 **GitHub Repository:** [Nexora](https://github.com/bhaveshkumbhalwar/Nexora)
 
+## ✨ Features
+
+- **AI-powered conversations** — Ask questions and receive AI-generated responses.
+- **Streaming responses** — View responses as they are generated.
+- **Chat history** — Save and retrieve conversations.
+- **Responsive UI** — Clean interface built for a smooth user experience.
+- **REST API** — FastAPI backend for handling chat requests.
+- **Cloud deployment** — Frontend and backend hosted on Render.
+
+## 🛠️ Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| React + Vite | Frontend |
+| TypeScript | Type-safe development |
+| Tailwind CSS | UI styling |
+| Python + FastAPI | Backend API |
+| SQLAlchemy + SQLite | Conversation storage |
+| Gemini-compatible API | AI-generated responses |
+| Render | Deployment |
+
+## 🏗️ Architecture
+
+```text
+User
+  ↓
+React + Vite Frontend
+  ↓
+FastAPI Backend
+  ↓
+Gemini-compatible AI API
+  ↓
+Streaming Response
+  ↓
+User Interface
 ```
-PE_PROJECT/
-  backend/
-    app/
-      main.py
-      api/routes/{health,chat,conversations}.py
-      core/config.py
-      schemas/
-      services/{llm_service,conversation_service}.py
-      db/{database,models}.py
-    tests/
-    requirements.txt
-    .env.example
-  frontend/
-    src/...
-  README.md
+
+Conversation history is managed through the backend and stored in the database.
+
+## 🚀 Run Locally
+
+**1. Clone the repository**
+
+```bash
+git clone https://github.com/bhaveshkumbhalwar/Nexora.git
+cd Nexora
 ```
 
-## Prerequisites
-- Python 3.9+
-- Node.js 18+
-
-## Backend setup
+**2. Set up the backend**
 
 ```bash
 cd backend
 python3 -m venv .venv
-.venv/bin/pip install -r requirements.txt
-cp .env.example .env
-# edit .env and set LLM_API_KEY (and optionally LLM_MODEL, LLM_BASE_URL)
-.venv/bin/uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
-Health check: `curl http://127.0.0.1:8000/api/health`
+Configure the required environment variables using `backend/.env.example`, then start the backend:
 
-## Frontend setup
+```bash
+uvicorn app.main:app --reload
+```
+
+**3. Set up the frontend**
+
+Open another terminal:
 
 ```bash
 cd frontend
@@ -55,45 +79,21 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173. The Vite dev server proxies `/api` to the backend.
+Configure `VITE_API_URL` to point to your local backend API, following the project's environment configuration.
 
-## Environment variables (backend/.env)
+## 🔐 Security
 
-| Variable | Description |
-|---|---|
-| LLM_PROVIDER | Provider name (default openai) |
-| LLM_MODEL | Model name (default gpt-4o-mini) |
-| LLM_BASE_URL | Optional OpenAI-compatible base URL |
-| LLM_API_KEY | API key (required for real responses) |
-| LLM_TIMEOUT_SECONDS | Request timeout (default 60) |
-| LLM_MAX_OUTPUT_TOKENS | Max output tokens (default 1024) |
-| LLM_CONTEXT_MESSAGE_LIMIT | Context messages (default 20) |
-| DATABASE_URL | SQLite URL (default sqlite:///./app.db) |
-| CORS_ORIGINS | Allowed origins (default http://localhost:5173) |
+- Keep API keys and credentials in backend environment variables.
+- Never commit `.env` files or secrets to GitHub.
+- Configure CORS to allow trusted frontend origins.
 
-Never commit `.env`. The API key is never sent to the browser.
+## 👨‍💻 Author
 
-## Running tests
+**Bhavesh Kumbhalwar**
 
-Backend:
-```bash
-cd backend
-.venv/bin/pytest -q
-```
+- GitHub: [@bhaveshkumbhalwar](https://github.com/bhaveshkumbhalwar)
+- Project: [Nexora AI](https://nexora-1-nxe6.onrender.com/)
 
-Frontend:
-```bash
-cd frontend
-npm run test
-npm run build
-```
+## 📄 License
 
-## Common errors
-- `configured: false` in /api/health: set LLM_API_KEY in backend/.env and restart.
-- CORS errors: ensure CORS_ORIGINS includes the frontend origin.
-- `no such table`: delete stale app.db and restart; tests use in-memory DB.
 
-## Limitations
-- Single-user, local-only; no authentication.
-- Depends on configured provider availability and API key.
-- Model answers may be incorrect; verify important information.
