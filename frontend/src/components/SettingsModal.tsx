@@ -42,9 +42,6 @@ export default function SettingsModal({ health, theme, onTheme, onClose }: Props
               ))}
             </div>
           </div>
-          <p className="text-xs text-muted">
-            API keys are stored only on the backend. This app is local, single-user.
-          </p>
         </div>
       </div>
     </div>
