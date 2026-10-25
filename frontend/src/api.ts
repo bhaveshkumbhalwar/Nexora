@@ -1,7 +1,13 @@
 import type { ConversationSummary, ConversationDetail, Health } from './types';
 
-const RAW_BASE = import.meta.env.VITE_API_URL || '/api';
-const BASE = RAW_BASE.replace(/\/+$/, '');
+export function resolveApiBase(raw: string | undefined = import.meta.env.VITE_API_URL): string {
+  const trimmed = (raw || '').trim().replace(/\/+$/, '');
+  if (!trimmed) return '/api';
+  if (trimmed.endsWith('/api')) return trimmed;
+  return trimmed + '/api';
+}
+
+const BASE = resolveApiBase();
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, {
