@@ -1,6 +1,7 @@
 import type { ConversationSummary, ConversationDetail, Health } from './types';
 
-const BASE = '/api';
+const RAW_BASE = import.meta.env.VITE_API_URL || '/api';
+const BASE = RAW_BASE.replace(/\/+$/, '');
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, {

@@ -61,3 +61,18 @@ def test_stream_error(client):
 
     events = _parse_sse(body)
     assert any(e["type"] == "error" and "boom" in e["detail"] for e in events)
+
+
+def test_stream_empty(client):
+    async def empty_stream(messages):
+        return
+        yield  # pragma: no cover
+
+    with pytest.MonkeyPatch().context() as mp:
+        mp.setattr("app.api.routes.chat.stream_chat_completion", empty_stream)
+        with client.stream("POST", "/api/chat/stream", json={"message": "hi"}) as r:
+            assert r.status_code == 200
+            body = r.read().decode()
+
+    events = _parse_sse(body)
+    assert any(e["type"] == "error" and "empty" in e["detail"].lower() for e in events)

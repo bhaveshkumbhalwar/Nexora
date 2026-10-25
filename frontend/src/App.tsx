@@ -92,6 +92,8 @@ export default function App() {
     const controller = new AbortController();
     abortRef.current = controller;
     const myReq = ++reqIdRef.current;
+    let receivedDone = false;
+    let hadError = false;
 
     try {
       await streamChat(
@@ -113,6 +115,7 @@ export default function App() {
             );
           },
           onDone: (data) => {
+            receivedDone = true;
             if (myReq !== reqIdRef.current) return;
             if (data?.assistant_message_id) {
               setMessages((m) =>
@@ -124,6 +127,7 @@ export default function App() {
             refreshConversations();
           },
           onError: (message) => {
+            hadError = true;
             if (myReq !== reqIdRef.current) return;
             setError(message);
             setMessages((m) => m.filter((msg) => msg.id !== tempAssistantId));
@@ -132,6 +136,10 @@ export default function App() {
         controller.signal,
       );
       if (myReq !== reqIdRef.current) return;
+      if (!receivedDone && !hadError) {
+        setError('Connection closed before the response completed.');
+        setMessages((m) => m.filter((msg) => msg.id !== tempAssistantId));
+      }
     } catch (e) {
       if (myReq !== reqIdRef.current) return;
       if ((e as Error).name !== 'AbortError') {

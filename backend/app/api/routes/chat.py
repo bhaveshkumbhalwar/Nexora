@@ -130,9 +130,14 @@ async def chat_stream(req: ChatRequest, request: Request, db: Session = Depends(
                 logger.info("stream cancelled conversation_id=%s", conv.id)
                 return
 
+            if not accumulated.strip():
+                logger.warning("stream empty response conversation_id=%s", conv.id)
+                yield _sse({"type": "error", "detail": "The model returned an empty response."})
+                return
+
             t0 = time.perf_counter()
             assistant_msg = await run_in_threadpool(
-                cs.add_message, db, conv.id, "assistant", accumulated.strip() or "(no response)"
+                cs.add_message, db, conv.id, "assistant", accumulated.strip()
             )
             assistant_msg_id = assistant_msg.id
             if conv.title == "New chat":
@@ -169,4 +174,12 @@ async def chat_stream(req: ChatRequest, request: Request, db: Session = Depends(
                 conv.id,
             )
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
