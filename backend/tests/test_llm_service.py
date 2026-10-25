@@ -338,3 +338,38 @@ def test_provider_error_code_extraction():
     exc = APIStatusError("busy", response=response, body=response.json())
     assert llm_service._provider_error_code(exc) == "UNAVAILABLE"
     assert llm_service._provider_error_code(RuntimeError("x")) == "n/a"
+
+
+def test_quota_exhausted_not_retried(monkeypatch):
+    monkeypatch.setattr(settings, "llm_api_key", "test-key")
+    monkeypatch.setattr(settings, "llm_model", "gemini-test-model")
+    monkeypatch.setattr(settings, "llm_max_retries", 3)
+    monkeypatch.setattr(settings, "llm_retry_base_delay_seconds", 0.0)
+    monkeypatch.setattr(settings, "llm_retry_max_delay_seconds", 0.0)
+
+    calls = {"n": 0}
+
+    class FakeCompletions:
+        def create(self, **kwargs):
+            calls["n"] += 1
+            request = httpx.Request("POST", "https://example.com")
+            response = httpx.Response(
+                429,
+                request=request,
+                json={"error": {"code": 429, "message": "You exceeded your current quota", "status": "RESOURCE_EXHAUSTED"}},
+            )
+            raise APIStatusError("quota", response=response, body=response.json())
+
+    class FakeChat:
+        completions = FakeCompletions()
+
+    class FakeClient:
+        def __init__(self, **kwargs):
+            self.chat = FakeChat()
+
+    monkeypatch.setattr(llm_service, "OpenAI", FakeClient)
+
+    with pytest.raises(LLMServiceError) as exc:
+        llm_service.chat_completion([{"role": "user", "content": "hi"}])
+    assert "quota exhausted" in str(exc.value).lower()
+    assert calls["n"] == 1

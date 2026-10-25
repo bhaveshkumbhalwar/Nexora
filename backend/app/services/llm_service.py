@@ -29,10 +29,9 @@ class LLMServiceError(Exception):
 
 
 SYSTEM_PROMPT = (
-    "You are a helpful, accurate, and concise assistant. "
-    "Answer questions across many topics. Use Markdown for structure: headings, lists, "
-    "tables, and fenced code blocks. Explain complex ideas simply when asked. "
-    "Be honest about uncertainty. Do not fabricate facts."
+    "You are a helpful, concise assistant. Answer across many topics. "
+    "Use Markdown for structure. Explain simply when asked. "
+    "Be honest about uncertainty; do not fabricate facts."
 )
 
 _RETRYABLE_STATUS_CODES = {408, 409, 425, 429, 500, 502, 503, 504}
@@ -42,6 +41,8 @@ def _is_retryable(exc: Exception) -> bool:
     if isinstance(exc, (APITimeoutError, APIConnectionError)):
         return True
     if isinstance(exc, APIStatusError):
+        if exc.status_code == 429 and _is_quota_exhausted(exc):
+            return False
         return exc.status_code in _RETRYABLE_STATUS_CODES or exc.status_code >= 500
     return False
 
@@ -65,6 +66,19 @@ def _provider_error_code(exc: Exception) -> str:
         if isinstance(error, dict):
             return str(error.get("code") or error.get("status") or "n/a")
     return "n/a"
+
+
+def _is_quota_exhausted(exc: Exception) -> bool:
+    if not isinstance(exc, APIStatusError) or exc.status_code != 429:
+        return False
+    text = str(exc).lower()
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        error = body.get("error")
+        if isinstance(error, dict):
+            text += " " + str(error.get("message", "")).lower()
+            text += " " + str(error.get("status", "")).lower()
+    return "quota" in text or "resource_exhausted" in text or "exceeded your" in text
 
 
 def _retry_after(exc: Exception) -> Optional[float]:
@@ -105,6 +119,8 @@ def _map_provider_error(exc: Exception) -> Exception:
     if isinstance(exc, BadRequestError):
         return LLMServiceError("The request was rejected by the model provider.")
     if isinstance(exc, RateLimitError):
+        if _is_quota_exhausted(exc):
+            return LLMServiceError("API quota exhausted. Please try again later.")
         return LLMServiceError("Rate limit reached. Please try again shortly.")
     if isinstance(exc, APITimeoutError):
         return LLMServiceError("The request timed out. Please try again.")
@@ -112,6 +128,8 @@ def _map_provider_error(exc: Exception) -> Exception:
         if exc.status_code in {503, 502, 504}:
             return LLMServiceError("The AI model is temporarily busy. Please try again in a moment.")
         if exc.status_code == 429:
+            if _is_quota_exhausted(exc):
+                return LLMServiceError("API quota exhausted. Please try again later.")
             return LLMServiceError("Rate limit reached. Please try again shortly.")
         return LLMServiceError(f"Provider error: {exc}")
     if isinstance(exc, APIError):

@@ -27,11 +27,11 @@ class Settings(BaseSettings):
     llm_base_url: Optional[str] = None
     llm_api_key: Optional[str] = None
     llm_timeout_seconds: int = 60
-    llm_max_output_tokens: int = 1024
-    llm_context_message_limit: int = 20
-    llm_max_retries: int = 3
-    llm_retry_base_delay_seconds: float = 1.0
-    llm_retry_max_delay_seconds: float = 8.0
+    llm_max_output_tokens: int = 512
+    llm_context_message_limit: int = 10
+    llm_max_retries: int = 2
+    llm_retry_base_delay_seconds: float = 0.5
+    llm_retry_max_delay_seconds: float = 4.0
 
     @field_validator("llm_model")
     @classmethod
