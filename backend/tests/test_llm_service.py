@@ -323,3 +323,18 @@ async def test_stream_failure_during_streaming_not_retried(monkeypatch):
             pass
     assert "temporarily busy" in str(exc.value)
     assert create_calls["n"] == 1
+
+
+def test_provider_error_code_extraction():
+    import httpx
+    from openai import APIStatusError
+
+    request = httpx.Request("POST", "https://example.com")
+    response = httpx.Response(
+        503,
+        request=request,
+        json={"error": {"code": "UNAVAILABLE", "status": "UNAVAILABLE"}},
+    )
+    exc = APIStatusError("busy", response=response, body=response.json())
+    assert llm_service._provider_error_code(exc) == "UNAVAILABLE"
+    assert llm_service._provider_error_code(RuntimeError("x")) == "n/a"

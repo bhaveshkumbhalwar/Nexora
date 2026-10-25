@@ -56,6 +56,17 @@ def _status_code(exc: Exception) -> str:
     return "unknown"
 
 
+def _provider_error_code(exc: Exception) -> str:
+    if not isinstance(exc, APIStatusError):
+        return "n/a"
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        error = body.get("error")
+        if isinstance(error, dict):
+            return str(error.get("code") or error.get("status") or "n/a")
+    return "n/a"
+
+
 def _retry_after(exc: Exception) -> Optional[float]:
     if not isinstance(exc, APIStatusError):
         return None
@@ -114,7 +125,7 @@ def _build_client() -> OpenAI:
         raise LLMConfigurationError(
             "LLM API key is not configured. Set LLM_API_KEY in backend/.env."
         )
-    kwargs = {"api_key": api_key, "timeout": settings.llm_timeout_seconds}
+    kwargs = {"api_key": api_key, "timeout": settings.llm_timeout_seconds, "max_retries": 0}
     if settings.llm_base_url:
         kwargs["base_url"] = settings.llm_base_url
     return OpenAI(**kwargs)
@@ -126,7 +137,7 @@ def _build_async_client() -> AsyncOpenAI:
         raise LLMConfigurationError(
             "LLM API key is not configured. Set LLM_API_KEY in backend/.env."
         )
-    kwargs = {"api_key": api_key, "timeout": settings.llm_timeout_seconds}
+    kwargs = {"api_key": api_key, "timeout": settings.llm_timeout_seconds, "max_retries": 0}
     if settings.llm_base_url:
         kwargs["base_url"] = settings.llm_base_url
     return AsyncOpenAI(**kwargs)
@@ -147,6 +158,13 @@ async def _create_async_stream(client, payload):
         except Exception as exc:  # noqa: BLE001
             last_exc = exc
             if not _is_retryable(exc) or attempt == max_attempts:
+                logger.error(
+                    "Provider request failed after %d attempt(s): exception=%s status=%s provider_code=%s",
+                    attempt,
+                    type(exc).__name__,
+                    _status_code(exc),
+                    _provider_error_code(exc),
+                )
                 raise _map_provider_error(exc) from exc
             delay = _retry_delay(attempt, exc)
             logger.warning(
@@ -174,6 +192,13 @@ def _create_sync_completion(client, payload):
         except Exception as exc:  # noqa: BLE001
             last_exc = exc
             if not _is_retryable(exc) or attempt == max_attempts:
+                logger.error(
+                    "Provider request failed after %d attempt(s): exception=%s status=%s provider_code=%s",
+                    attempt,
+                    type(exc).__name__,
+                    _status_code(exc),
+                    _provider_error_code(exc),
+                )
                 raise _map_provider_error(exc) from exc
             delay = _retry_delay(attempt, exc)
             logger.warning(
