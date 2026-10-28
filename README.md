@@ -1,4 +1,4 @@
-# Nexora AI 🚀 
+# Nexora AI 🚀  
 
 **Nexora AI** is a modern, full-stack AI assistant designed to provide an interactive conversational experience with streaming responses and persistent chat history. 
 
