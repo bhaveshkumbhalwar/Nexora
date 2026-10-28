@@ -36,7 +36,7 @@ React + Vite Frontend
   ↓
 FastAPI Backend
   ↓
-Gemini-compatible AI API
+Geoq-compatible AI API
   ↓
 Streaming Response
   ↓
